@@ -669,6 +669,12 @@
             </div>
 
             <div class="tab-content" id="history-tab">
+                <div class="list-actions">
+                    <button id="export-csv-btn">匯出 CSV</button>
+                    <button id="export-json-btn">匯出 JSON</button>
+                    <button id="screenshot-btn">截圖</button>
+                    <button id="clear-history-btn">清空記錄</button>
+                </div>
                 <div class="item-list" id="history-list">
                     <div class="empty-state">
                         <p>暫無抽獎紀錄</p>
@@ -1471,6 +1477,14 @@
             if (fullscreenBtn) {
                 fullscreenBtn.addEventListener('click', toggleFullscreen);
             }
+
+            // 匯出功能按鈕
+            document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+            document.getElementById('export-json-btn').addEventListener('click', exportJSON);
+            document.getElementById('screenshot-btn').addEventListener('click', takeScreenshot);
+
+            // 清空歷史記錄按鈕
+            document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
         }
 
         // ============ 全螢幕模式 ============
@@ -2126,6 +2140,56 @@
             // 初始更新按鈕狀態
             updateDrawButtonState();
         });
+
+        // ============ 匯出功能 ============
+        function exportCSV() {
+            if (state.history.length === 0) {
+                alert('沒有歷史記錄可匯出');
+                return;
+            }
+
+            let csv = '\uFEFF'; // BOM for Excel
+            csv += '抽獎序號,時間,獎項,中獎者\n';
+
+            state.history.forEach((record, index) => {
+                const time = formatTimestamp(record.timestamp);
+                const prize = record.prize || '';
+                csv += `${index + 1},${time},${prize},${record.winner}\n`;
+            });
+
+            downloadFile(csv, 'lottery-result.csv', 'text/csv;charset=utf-8');
+        }
+
+        function exportJSON() {
+            if (state.history.length === 0) {
+                alert('沒有歷史記錄可匯出');
+                return;
+            }
+
+            const json = JSON.stringify(state.history, null, 2);
+            downloadFile(json, 'lottery-result.json', 'application/json');
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function takeScreenshot() {
+            const overlay = document.getElementById('winner-overlay');
+
+            html2canvas(overlay).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `winner-${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
     </script>
 </body>
 </html>
