@@ -1465,7 +1465,39 @@
             if (soundToggleBtn) {
                 soundToggleBtn.addEventListener('click', () => AudioSystem.toggle());
             }
+
+            // 全螢幕按鈕
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', toggleFullscreen);
+            }
         }
+
+        // ============ 全螢幕模式 ============
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert('無法進入全螢幕模式');
+                });
+                document.body.classList.add('fullscreen');
+            } else {
+                document.exitFullscreen();
+                document.body.classList.remove('fullscreen');
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.body.classList.remove('fullscreen');
+            }
+        });
+
+        // 快速鍵 F
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            }
+        });
 
         // ============ Google Sheets 匯入 ============
         async function importFromGoogleSheets() {
