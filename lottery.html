@@ -923,6 +923,519 @@
             const date = new Date(timestamp);
             return date.toLocaleString('zh-TW');
         }
+
+        // ============ 分頁切換功能 ============
+        function initTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除所有 active 狀態
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    // 設定當前 active
+                    btn.classList.add('active');
+                    const tabId = btn.dataset.tab;
+                    const tabContent = document.getElementById(tabId + '-tab');
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // ============ 名單列表渲染與操作 ============
+        function renderNamesList() {
+            const listEl = document.getElementById('names-list');
+            if (!listEl) return;
+
+            if (state.names.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <p>暫無名單</p>
+                        <small>點擊上方按鈕新增名單</small>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = state.names.map((name, index) => `
+                <div class="list-item" draggable="true" data-index="${index}" data-type="name">
+                    <span>${name}</span>
+                    <div>
+                        <button class="edit-btn" data-index="${index}" title="編輯">✏️</button>
+                        <button class="delete-btn" data-index="${index}" title="刪除">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 綁定編輯和刪除事件
+            listEl.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    editName(index);
+                });
+            });
+
+            listEl.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    deleteName(index);
+                });
+            });
+
+            // 設定拖曳排序
+            initDragSort(listEl, 'name');
+        }
+
+        function addName() {
+            const input = document.getElementById('name-input');
+            const name = input.value.trim();
+            if (!name) {
+                alert('請輸入名稱');
+                return;
+            }
+            state.names.push(name);
+            saveNames();
+            hideModal('name-modal');
+            input.value = '';
+        }
+
+        function editName(index) {
+            const currentName = state.names[index];
+            const newName = prompt('請輸入新名稱：', currentName);
+            if (newName !== null && newName.trim() !== '') {
+                state.names[index] = newName.trim();
+                saveNames();
+            }
+        }
+
+        function deleteName(index) {
+            if (confirm(`確定要刪除「${state.names[index]}」嗎？`)) {
+                state.names.splice(index, 1);
+                saveNames();
+            }
+        }
+
+        function clearNames() {
+            if (confirm('確定要清空所有名單嗎？')) {
+                state.names = [];
+                saveNames();
+            }
+        }
+
+        // ============ 獎項列表渲染與操作 ============
+        function renderPrizesList() {
+            const listEl = document.getElementById('prizes-list');
+            if (!listEl) return;
+
+            if (state.prizes.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <p>暫無獎品</p>
+                        <small>點擊上方按鈕新增獎品</small>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = state.prizes.map((prize, index) => `
+                <div class="list-item" draggable="true" data-index="${index}" data-type="prize">
+                    <span>${prize.name} (數量: ${prize.count})</span>
+                    <div>
+                        <button class="edit-btn" data-index="${index}" title="編輯">✏️</button>
+                        <button class="delete-btn" data-index="${index}" title="刪除">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 綁定編輯和刪除事件
+            listEl.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    editPrize(index);
+                });
+            });
+
+            listEl.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    deletePrize(index);
+                });
+            });
+
+            // 設定拖曳排序
+            initDragSort(listEl, 'prize');
+        }
+
+        function addPrize() {
+            const nameInput = document.getElementById('prize-name');
+            const countInput = document.getElementById('prize-count');
+            const name = nameInput.value.trim();
+            const count = parseInt(countInput.value) || 1;
+
+            if (!name) {
+                alert('請輸入獎品名稱');
+                return;
+            }
+
+            state.prizes.push({
+                id: generateUUID(),
+                name: name,
+                count: count
+            });
+            savePrizes();
+            hideModal('prize-modal');
+            nameInput.value = '';
+            countInput.value = '1';
+        }
+
+        function editPrize(index) {
+            const prize = state.prizes[index];
+            const newName = prompt('請輸入新獎品名稱：', prize.name);
+            if (newName !== null && newName.trim() !== '') {
+                const newCount = prompt('請輸入數量：', prize.count);
+                state.prizes[index].name = newName.trim();
+                state.prizes[index].count = parseInt(newCount) || prize.count;
+                savePrizes();
+            }
+        }
+
+        function deletePrize(index) {
+            if (confirm(`確定要刪除「${state.prizes[index].name}」嗎？`)) {
+                state.prizes.splice(index, 1);
+                savePrizes();
+            }
+        }
+
+        function clearPrizes() {
+            if (confirm('確定要清空所有獎品嗎？')) {
+                state.prizes = [];
+                savePrizes();
+            }
+        }
+
+        function updateCurrentPrizeDisplay() {
+            const displayEl = document.querySelector('.prize-display');
+            if (!displayEl) return;
+
+            if (state.prizes.length === 0 || state.currentPrizeIndex >= state.prizes.length) {
+                displayEl.innerHTML = `
+                    <h2>當前獎品</h2>
+                    <p>尚未設定獎品</p>
+                `;
+                return;
+            }
+
+            const prize = state.prizes[state.currentPrizeIndex];
+            displayEl.innerHTML = `
+                <h2>當前獎品</h2>
+                <p><strong>${prize.name}</strong></p>
+                <p>剩餘數量: ${prize.count}</p>
+            `;
+        }
+
+        // ============ 歷史記錄渲染 ============
+        function renderHistoryList() {
+            const listEl = document.getElementById('history-list');
+            if (!listEl) return;
+
+            if (state.history.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <p>暫無抽獎紀錄</p>
+                        <small>完成抽獎後將顯示於此</small>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = state.history.map((record, index) => `
+                <div class="list-item">
+                    <div>
+                        <strong>${record.winner}</strong>
+                        <br>
+                        <small>獲得: ${record.prize}</small>
+                        <br>
+                        <small>${formatTimestamp(record.timestamp)}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addHistoryRecord(winner, prize) {
+            state.history.unshift({
+                id: generateUUID(),
+                winner: winner,
+                prize: prize,
+                timestamp: Date.now()
+            });
+            saveHistory();
+        }
+
+        function clearHistory() {
+            if (confirm('確定要清空所有歷史記錄嗎？')) {
+                state.history = [];
+                saveHistory();
+            }
+        }
+
+        // ============ 彈窗控制 ============
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function initModals() {
+            // 關閉按鈕
+            document.querySelectorAll('.close-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modalId = btn.dataset.modal;
+                    if (modalId) hideModal(modalId);
+                });
+            });
+
+            // 取消按鈕
+            document.querySelectorAll('.btn-cancel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modalId = btn.dataset.modal;
+                    if (modalId) hideModal(modalId);
+                });
+            });
+
+            // 點擊背景關閉
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+
+            // ESC 鍵關閉
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal.active').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                }
+            });
+        }
+
+        // ============ 批次匯入功能 ============
+        let batchImportType = 'names'; // 'names' or 'prizes'
+
+        function openBatchImport(type = 'names') {
+            batchImportType = type;
+            const modal = document.getElementById('batch-import-modal');
+            const textarea = document.getElementById('batch-names');
+            const header = modal.querySelector('.modal-header h2');
+            const label = modal.querySelector('label');
+
+            if (type === 'prizes') {
+                header.textContent = '批次匯入獎品';
+                label.textContent = '請輸入獎品（格式：名稱,數量，一行一個）：';
+                textarea.placeholder = '頭獎,1\n二獎,2\n三獎,3';
+            } else {
+                header.textContent = '批次匯入名單';
+                label.textContent = '請輸入名稱（一行一個）：';
+                textarea.placeholder = '張三\n李四\n王五';
+            }
+            textarea.value = '';
+            showModal('batch-import-modal');
+        }
+
+        function confirmBatchImport() {
+            const textarea = document.getElementById('batch-names');
+            const text = textarea.value.trim();
+
+            if (!text) {
+                alert('請輸入資料');
+                return;
+            }
+
+            const lines = text.split('\n').filter(line => line.trim());
+
+            if (batchImportType === 'prizes') {
+                lines.forEach(line => {
+                    const parts = line.split(',');
+                    const name = parts[0]?.trim();
+                    const count = parseInt(parts[1]?.trim()) || 1;
+                    if (name) {
+                        state.prizes.push({
+                            id: generateUUID(),
+                            name: name,
+                            count: count
+                        });
+                    }
+                });
+                savePrizes();
+            } else {
+                lines.forEach(line => {
+                    const name = line.trim();
+                    if (name) {
+                        state.names.push(name);
+                    }
+                });
+                saveNames();
+            }
+
+            hideModal('batch-import-modal');
+            textarea.value = '';
+        }
+
+        // ============ 拖曳排序功能 ============
+        function initDragSort(listEl, type) {
+            let draggedItem = null;
+            let draggedIndex = null;
+
+            listEl.querySelectorAll('.list-item').forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = item;
+                    draggedIndex = parseInt(item.dataset.index);
+                    item.style.opacity = '0.5';
+                });
+
+                item.addEventListener('dragend', () => {
+                    item.style.opacity = '1';
+                    draggedItem = null;
+                    draggedIndex = null;
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const targetIndex = parseInt(item.dataset.index);
+
+                    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                        if (type === 'name') {
+                            const [removed] = state.names.splice(draggedIndex, 1);
+                            state.names.splice(targetIndex, 0, removed);
+                            saveNames();
+                        } else if (type === 'prize') {
+                            const [removed] = state.prizes.splice(draggedIndex, 1);
+                            state.prizes.splice(targetIndex, 0, removed);
+                            savePrizes();
+                        }
+                    }
+                });
+            });
+        }
+
+        // ============ 3D 場景更新（佔位函數） ============
+        function update3DScene() {
+            // 將在後續任務中實作
+            console.log('更新 3D 場景，當前名單數量:', state.names.length);
+        }
+
+        // ============ 綁定按鈕事件 ============
+        function initButtons() {
+            // 名單管理按鈕
+            const addNameBtn = document.getElementById('add-name-btn');
+            if (addNameBtn) {
+                addNameBtn.addEventListener('click', () => {
+                    document.getElementById('name-input').value = '';
+                    showModal('name-modal');
+                });
+            }
+
+            const batchImportBtn = document.getElementById('batch-import-btn');
+            if (batchImportBtn) {
+                batchImportBtn.addEventListener('click', () => openBatchImport('names'));
+            }
+
+            const googleImportBtn = document.getElementById('google-import-btn');
+            if (googleImportBtn) {
+                googleImportBtn.addEventListener('click', () => showModal('google-import-modal'));
+            }
+
+            // 獎項管理按鈕
+            const addPrizeBtn = document.getElementById('add-prize-btn');
+            if (addPrizeBtn) {
+                addPrizeBtn.addEventListener('click', () => {
+                    document.getElementById('prize-name').value = '';
+                    document.getElementById('prize-count').value = '1';
+                    showModal('prize-modal');
+                });
+            }
+
+            const batchImportPrizes = document.getElementById('batch-import-prizes');
+            if (batchImportPrizes) {
+                batchImportPrizes.addEventListener('click', () => openBatchImport('prizes'));
+            }
+
+            // 模態框提交按鈕
+            const submitName = document.getElementById('submit-name');
+            if (submitName) {
+                submitName.addEventListener('click', addName);
+            }
+
+            const submitPrize = document.getElementById('submit-prize');
+            if (submitPrize) {
+                submitPrize.addEventListener('click', addPrize);
+            }
+
+            const submitBatchNames = document.getElementById('submit-batch-names');
+            if (submitBatchNames) {
+                submitBatchNames.addEventListener('click', confirmBatchImport);
+            }
+
+            // 名稱輸入框 Enter 鍵
+            const nameInput = document.getElementById('name-input');
+            if (nameInput) {
+                nameInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') addName();
+                });
+            }
+
+            // Google 匯入
+            const submitGoogleImport = document.getElementById('submit-google-import');
+            if (submitGoogleImport) {
+                submitGoogleImport.addEventListener('click', () => {
+                    alert('Google 匯入功能需要設定 API Key，暫未實作');
+                    hideModal('google-import-modal');
+                });
+            }
+
+            // 關閉中獎 overlay
+            const closeWinnerBtn = document.querySelector('.close-winner-btn');
+            if (closeWinnerBtn) {
+                closeWinnerBtn.addEventListener('click', () => {
+                    document.querySelector('.winner-overlay').classList.remove('active');
+                });
+            }
+        }
+
+        // ============ 初始化 ============
+        function init() {
+            loadState();
+            initTabs();
+            initModals();
+            initButtons();
+            renderNamesList();
+            renderPrizesList();
+            renderHistoryList();
+            updateCurrentPrizeDisplay();
+        }
+
+        // DOM 載入完成後初始化
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
