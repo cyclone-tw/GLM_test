@@ -1387,11 +1387,7 @@
             });
         }
 
-        // ============ 3D 場景更新（佔位函數） ============
-        function update3DScene() {
-            // 將在後續任務中實作
-            console.log('更新 3D 場景，當前名單數量:', state.names.length);
-        }
+        // ============ 3D 場景更新（由 Task 7 實作） ============
 
         // ============ 綁定按鈕事件 ============
         function initButtons() {
@@ -1637,6 +1633,230 @@
         document.addEventListener('DOMContentLoaded', () => {
             init();
             AudioSystem.init();
+        });
+
+        // ============ 3D 場景變數 ============
+        let scene, camera, renderer, sphereGroup, nameSprites = [];
+        let animationId = null;
+        let rotationSpeed = 0.005;
+        let targetSpeed = 0.005;
+
+        // ============ WebGL 支援檢測 ============
+        function checkWebGL() {
+            try {
+                const canvas = document.createElement('canvas');
+                return !!(window.WebGLRenderingContext &&
+                    (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // ============ Three.js 3D 場景初始化 ============
+        function init3DScene() {
+            if (!checkWebGL()) {
+                console.warn('WebGL 不支援，使用 2D 備用模式');
+                state.webglSupported = false;
+                init2DFallback();
+                return;
+            }
+
+            const container = document.querySelector('.canvas-container');
+            const canvas = document.getElementById('canvas3d');
+
+            // 建立場景
+            scene = new THREE.Scene();
+
+            // 建立相機
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.z = 200;
+
+            // 建立渲染器
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // 建立球體群組
+            sphereGroup = new THREE.Group();
+            scene.add(sphereGroup);
+
+            // 添加環境光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            // 添加點光源
+            const pointLight = new THREE.PointLight(0xffffff, 0.8);
+            pointLight.position.set(100, 100, 100);
+            scene.add(pointLight);
+
+            // 更新場景
+            update3DScene();
+
+            // 開始動畫
+            animate();
+
+            // 視窗大小變更監聽
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // ============ 更新 3D 場景中的名字 ============
+        function update3DScene() {
+            if (!state.webglSupported) {
+                update2DFallback();
+                return;
+            }
+
+            if (!sphereGroup) return;
+
+            // 清除舊的精靈
+            nameSprites.forEach(sprite => {
+                sphereGroup.remove(sprite);
+                if (sprite.material.map) sprite.material.map.dispose();
+                sprite.material.dispose();
+            });
+            nameSprites = [];
+
+            // 獲取要顯示的名字
+            let displayNames = [...state.names];
+            if (displayNames.length === 0) {
+                displayNames = ['等待名單...'];
+            } else if (displayNames.length > 50) {
+                // 超過 50 個時隨機選擇
+                displayNames = getRandomItems(displayNames, 50);
+            }
+
+            // 使用 Fibonacci 球體算法放置名字
+            displayNames.forEach((name, index) => {
+                // Fibonacci 球體定位
+                const phi = Math.acos(-1 + (2 * index) / displayNames.length);
+                const theta = Math.sqrt(displayNames.length * Math.PI) * phi;
+                const radius = 100;
+
+                const x = radius * Math.cos(theta) * Math.sin(phi);
+                const y = radius * Math.sin(theta) * Math.sin(phi);
+                const z = radius * Math.cos(phi);
+
+                // 建立文字精靈
+                const sprite = createTextSprite(name);
+                sprite.position.set(x, y, z);
+
+                sphereGroup.add(sprite);
+                nameSprites.push(sprite);
+            });
+        }
+
+        // ============ 建立文字精靈 ============
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = 256;
+            canvas.height = 64;
+
+            // 繪製背景（透明）
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製文字
+            context.font = 'bold 24px Arial, sans-serif';
+            context.fillStyle = '#ffffff';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+
+            // 添加文字陰影效果
+            context.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            context.shadowBlur = 4;
+            context.shadowOffsetX = 2;
+            context.shadowOffsetY = 2;
+
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            // 建立紋理
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+
+            // 建立精靈材質
+            const spriteMaterial = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true
+            });
+
+            // 建立精靈
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(40, 10, 1);
+
+            return sprite;
+        }
+
+        // ============ 動畫循環 ============
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+
+            // 平滑過渡到目標速度
+            rotationSpeed += (targetSpeed - rotationSpeed) * 0.05;
+
+            if (sphereGroup) {
+                sphereGroup.rotation.y += rotationSpeed;
+                sphereGroup.rotation.x += rotationSpeed * 0.3;
+            }
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // ============ 隨機選擇工具函數 ============
+        function getRandomItems(arr, count) {
+            const shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // ============ 視窗大小變更處理 ============
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+
+            const container = document.querySelector('.canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // ============ 2D 備用模式 ============
+        function init2DFallback() {
+            const fallbackEl = document.querySelector('.fallback-2d');
+            if (fallbackEl) {
+                fallbackEl.style.display = 'block';
+            }
+            update2DFallback();
+        }
+
+        function update2DFallback() {
+            const fallbackEl = document.querySelector('.fallback-2d');
+            if (!fallbackEl) return;
+
+            let displayNames = [...state.names];
+            if (displayNames.length === 0) {
+                displayNames = ['等待名單...'];
+            } else if (displayNames.length > 20) {
+                displayNames = getRandomItems(displayNames, 20);
+            }
+
+            fallbackEl.innerHTML = `
+                <h3>2D 備用模式</h3>
+                <p>Three.js 加載失敗，使用備用介面</p>
+                <div style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    ${displayNames.map(name => `<div style="padding: 5px; margin: 5px 0; background: rgba(255,107,107,0.2); border-radius: 4px;">${name}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        // ============ 初始化 3D 場景 ============
+        document.addEventListener('DOMContentLoaded', () => {
+            init3DScene();
         });
     </script>
 </body>
