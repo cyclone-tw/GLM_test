@@ -799,7 +799,130 @@
     </div>
 
     <script>
-        // JavaScript code will be implemented here
+        // ============ 資料狀態 ============
+        const state = {
+            names: [],           // 名單
+            prizes: [],          // 獎項
+            history: [],         // 歷史記錄
+            currentPrizeIndex: 0, // 當前獎項索引
+            isDrawing: false,    // 是否正在抽獎
+            soundEnabled: true,  // 音效開關
+            theme: 'tech',       // 當前主題
+            customTheme: {       // 自訂主題設定
+                bgColor: '#0a0a1a',
+                textColor: '#ffffff',
+                accentColor: '#00ffff',
+                particleColor: '#00ffff'
+            },
+            googleApiKey: '',    // Google API Key
+            webglSupported: true // WebGL 支援狀態
+        };
+
+        // ============ localStorage 工具 ============
+        const Storage = {
+            isAvailable() {
+                try {
+                    const test = '__test__';
+                    localStorage.setItem(test, test);
+                    localStorage.removeItem(test);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+
+            save(key, data) {
+                if (!this.isAvailable()) {
+                    console.warn('localStorage 不可用');
+                    return false;
+                }
+                try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                    return true;
+                } catch (e) {
+                    alert('無法儲存資料，請檢查瀏覽器設定');
+                    return false;
+                }
+            },
+
+            load(key, defaultValue = null) {
+                if (!this.isAvailable()) return defaultValue;
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : defaultValue;
+                } catch (e) {
+                    return defaultValue;
+                }
+            },
+
+            remove(key) {
+                if (this.isAvailable()) {
+                    localStorage.removeItem(key);
+                }
+            }
+        };
+
+        // 儲存鍵值
+        const STORAGE_KEYS = {
+            NAMES: 'lottery_names',
+            PRIZES: 'lottery_prizes',
+            HISTORY: 'lottery_history',
+            THEME: 'lottery_theme',
+            CUSTOM_THEME: 'lottery_custom_theme',
+            SOUND: 'lottery_sound',
+            GOOGLE_API_KEY: 'lottery_google_api_key'
+        };
+
+        // ============ 資料載入與儲存 ============
+        function loadState() {
+            state.names = Storage.load(STORAGE_KEYS.NAMES, []);
+            state.prizes = Storage.load(STORAGE_KEYS.PRIZES, []);
+            state.history = Storage.load(STORAGE_KEYS.HISTORY, []);
+            state.theme = Storage.load(STORAGE_KEYS.THEME, 'tech');
+            state.customTheme = Storage.load(STORAGE_KEYS.CUSTOM_THEME, state.customTheme);
+            state.soundEnabled = Storage.load(STORAGE_KEYS.SOUND, true);
+            state.googleApiKey = Storage.load(STORAGE_KEYS.GOOGLE_API_KEY, '');
+        }
+
+        function saveNames() {
+            Storage.save(STORAGE_KEYS.NAMES, state.names);
+            renderNamesList();
+            update3DScene();
+        }
+
+        function savePrizes() {
+            Storage.save(STORAGE_KEYS.PRIZES, state.prizes);
+            renderPrizesList();
+            updateCurrentPrizeDisplay();
+        }
+
+        function saveHistory() {
+            Storage.save(STORAGE_KEYS.HISTORY, state.history);
+            renderHistoryList();
+        }
+
+        function saveTheme() {
+            Storage.save(STORAGE_KEYS.THEME, state.theme);
+            Storage.save(STORAGE_KEYS.CUSTOM_THEME, state.customTheme);
+        }
+
+        function saveSoundSetting() {
+            Storage.save(STORAGE_KEYS.SOUND, state.soundEnabled);
+        }
+
+        // ============ 工具函數 ============
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-TW');
+        }
     </script>
 </body>
 </html>
