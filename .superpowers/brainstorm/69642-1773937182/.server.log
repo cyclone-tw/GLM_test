@@ -1,0 +1,17 @@
+{"type":"server-started","port":63257,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:63257","screen_dir":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182"}
+{"type":"screen-added","file":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182/animation-style.html"}
+{"source":"user-event","type":"click","text":"A\n    \n      轉輪式\n      圓柱體旋轉，名字貼在圓柱表面，像老虎機一樣滾動後停下","choice":"cylinder","id":null,"timestamp":1773937219330}
+{"source":"user-event","type":"click","text":"B\n    \n      球體式\n      名字漂浮在 3D 球體空間中旋轉，抽中者飛出放大顯示","choice":"sphere","id":null,"timestamp":1773937234960}
+{"source":"user-event","type":"click","text":"C\n    \n      卡牌式\n      3D 卡牌翻轉洗牌效果，最後翻開一張顯示中獎者","choice":"cards","id":null,"timestamp":1773937241396}
+{"source":"user-event","type":"click","text":"A\n    \n      轉輪式\n      圓柱體旋轉，名字貼在圓柱表面，像老虎機一樣滾動後停下","choice":"cylinder","id":null,"timestamp":1773937246918}
+{"source":"user-event","type":"click","text":"B\n    \n      球體式\n      名字漂浮在 3D 球體空間中旋轉，抽中者飛出放大顯示","choice":"sphere","id":null,"timestamp":1773937247554}
+{"type":"screen-added","file":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182/waiting.html"}
+{"type":"screen-added","file":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182/input-method.html"}
+{"source":"user-event","type":"click","text":"B\n    \n      列表管理介面\n      有新增/刪除/編輯按鈕的列表介面，可拖曳排序","choice":"ui-list","id":null,"timestamp":1773937412741}
+{"source":"user-event","type":"click","text":"B\n    \n      列表管理介面\n      有新增/刪除/編輯按鈕的列表介面，可拖曳排序","choice":"ui-list","id":null,"timestamp":1773937413980}
+{"type":"screen-added","file":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182/waiting-2.html"}
+{"type":"screen-added","file":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182/visual-style.html"}
+{"source":"user-event","type":"click","text":"A\n    \n      科技感\n      深色背景、霓虹光效、粒子特效，像科幻電影","choice":"tech","id":null,"timestamp":1773937505394}
+{"source":"user-event","type":"click","text":"D\n    \n      可自訂主題\n      提供多種主題切換，使用者可以選擇喜歡的風格","choice":"custom","id":null,"timestamp":1773937507401}
+{"type":"screen-added","file":"/Users/cyclone/Github/01-Repo/GLM_test/.superpowers/brainstorm/69642-1773937182/waiting-3.html"}
+{"type":"server-stopped","reason":"idle timeout"}

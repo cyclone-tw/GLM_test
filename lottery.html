@@ -698,23 +698,27 @@
     </div>
 
     <!-- Google 匯入模態框 -->
-    <div class="modal" id="google-import-modal">
+    <div class="modal" id="google-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Google 匯入名單</h2>
-                <button class="close-btn" data-modal="google-import-modal">×</button>
+                <button class="close-btn" data-modal="google-modal">×</button>
             </div>
             <div class="form-group">
-                <label for="google-sheet-url">Google 表單 URL：</label>
-                <input type="text" id="google-sheet-url" placeholder="https://docs.google.com/spreadsheets/...">
+                <label for="google-api-key">Google API Key：</label>
+                <input type="text" id="google-api-key" placeholder="請輸入您的 Google API Key">
             </div>
             <div class="form-group">
-                <label for="sheet-name">工作表名稱：</label>
-                <input type="text" id="sheet-name" placeholder="Sheet1">
+                <label for="google-sheet-id">試算表 ID：</label>
+                <input type="text" id="google-sheet-id" placeholder="從 URL 中取得 ID (例如: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms)">
+            </div>
+            <div class="form-group">
+                <label for="google-range">資料範圍（可選）：</label>
+                <input type="text" id="google-range" placeholder="Sheet1!A2:A" value="Sheet1!A2:A">
             </div>
             <div class="modal-actions">
-                <button class="btn-cancel" data-modal="google-import-modal">取消</button>
-                <button class="btn-submit" id="submit-google-import">匯入</button>
+                <button class="btn-cancel" data-modal="google-modal">取消</button>
+                <button class="btn-submit" id="google-confirm">匯入</button>
             </div>
         </div>
     </div>
@@ -1405,13 +1409,12 @@
             }
 
             // Google 匯入
-            const submitGoogleImport = document.getElementById('submit-google-import');
-            if (submitGoogleImport) {
-                submitGoogleImport.addEventListener('click', () => {
-                    alert('Google 匯入功能需要設定 API Key，暫未實作');
-                    hideModal('google-import-modal');
-                });
-            }
+            document.getElementById('google-import-btn').addEventListener('click', () => {
+                document.getElementById('google-api-key').value = state.googleApiKey;
+                showModal('google-modal');
+            });
+
+            document.getElementById('google-confirm').addEventListener('click', importFromGoogleSheets);
 
             // 關閉中獎 overlay
             const closeWinnerBtn = document.querySelector('.close-winner-btn');
@@ -1419,6 +1422,56 @@
                 closeWinnerBtn.addEventListener('click', () => {
                     document.querySelector('.winner-overlay').classList.remove('active');
                 });
+            }
+        }
+
+        // ============ Google Sheets 匯入 ============
+        async function importFromGoogleSheets() {
+            const apiKey = document.getElementById('google-api-key').value.trim();
+            const sheetId = document.getElementById('google-sheet-id').value.trim();
+            const range = document.getElementById('google-range').value.trim() || 'Sheet1!A2:A';
+
+            if (!apiKey || !sheetId) {
+                alert('請輸入 API Key 和試算表 ID');
+                return;
+            }
+
+            // 儲存 API Key
+            state.googleApiKey = apiKey;
+            Storage.save(STORAGE_KEYS.GOOGLE_API_KEY, apiKey);
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+            try {
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    if (response.status === 400 || response.status === 403) {
+                        throw new Error('API Key 無效，請檢查設定');
+                    } else if (response.status === 404) {
+                        throw new Error('無法讀取試算表，請確認已發布為網頁');
+                    } else {
+                        throw new Error('匯入失敗，請稍後再試');
+                    }
+                }
+
+                const data = await response.json();
+
+                if (!data.values || data.values.length === 0) {
+                    throw new Error('試算表沒有資料');
+                }
+
+                // 將二維陣列轉為一維
+                const items = data.values.flat().filter(s => s && s.trim());
+
+                state.names = [...state.names, ...items];
+                saveNames();
+
+                hideModal('google-modal');
+                alert(`成功匯入 ${items.length} 筆資料`);
+
+            } catch (error) {
+                alert(error.message);
             }
         }
 
