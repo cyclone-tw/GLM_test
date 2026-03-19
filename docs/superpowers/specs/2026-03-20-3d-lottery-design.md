@@ -25,6 +25,7 @@
 - 獎項與名單一起抽：先設好獎項清單，每次抽獎從名單抽出得獎者並綁定獎項
 - 中獎者從名單移除，不重複中獎
 - 獎項抽完後可繼續抽剩餘名單（無獎項綁定）
+- 獎項抽完時 UI 顯示「獎項: 無（繼續抽名）」，歷史記錄 prize 欄位為 null
 
 **輸入方式：**
 - 列表管理介面：新增/刪除/編輯/拖曳排序
@@ -55,7 +56,7 @@
 - 音效開關：使用者可關閉音效
 
 **音效來源：**
-- 使用內嵌 base64 編碼的音效檔案（避免外部依賴）
+- 使用內嵌 base64 編碼的 MP3 音效檔案（避免外部依賴，MP3 有最佳瀏覽器支援）
 - 音效可使用免費音效庫（如 Freesound.org 的 CC0 授權音效）
 - 預載音效以避免延遲
 
@@ -103,8 +104,12 @@
 | HTML5 | 結構 |
 | CSS3 | 樣式與動畫 |
 | JavaScript | 邏輯控制 |
-| Three.js | 3D 渲染 |
-| html2canvas | 截圖匯出 |
+| Three.js (via CDN) | 3D 渲染 |
+| html2canvas (via CDN) | 截圖匯出 |
+
+**CDN 來源：**
+- Three.js: `https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js`
+- html2canvas: `https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js`
 
 ### 檔案結構
 
@@ -119,6 +124,11 @@ lottery.html          # 單一 HTML 檔案（內含 CSS 和 JS）
 - 主題設定：localStorage
 - Google API Key：localStorage（使用者自行輸入）
 
+**localStorage 錯誤處理：**
+- 嘗試寫入前檢查 localStorage 是否可用
+- 若 localStorage 已滿或被停用，顯示警告「無法儲存資料，請檢查瀏覽器設定」
+- 資料仍可在當前工作階段中使用，但不會持久化
+
 ### 外部 API
 
 **Google Sheets API：**
@@ -129,6 +139,7 @@ lottery.html          # 單一 HTML 檔案（內含 CSS 和 JS）
   2. 取得試算表 ID（網址中 `/d/` 後的字串）
   3. 在應用程式中輸入試算表 ID 和 API Key
 - API 端點：`https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}?key={apiKey}`
+- 預設讀取範圍：A 欄（第一欄），跳過第一列（標題列），使用者可自訂範圍如 `Sheet1!A2:A`
 - 錯誤處理：
   - API Key 無效：顯示「API Key 無效，請檢查設定」
   - 試算表不存在或未公開：顯示「無法讀取試算表，請確認已發布為網頁」
@@ -178,14 +189,15 @@ lottery.html          # 單一 HTML 檔案（內含 CSS 和 JS）
 - 獎項為空且抽獎時，提示「無獎項，將只抽出名字」
 - Google API Key 無效時，顯示錯誤訊息
 - 網路錯誤時，提示「無法連線，請檢查網路」
-- WebGL 不支援時：顯示「您的瀏覽器不支援 WebGL，請使用較新版本的 Chrome、Firefox、Safari 或 Edge」並提供 2D 備用模式（簡單的滾動動畫）
+- WebGL 不支援時：顯示「您的瀏覽器不支援 WebGL，將使用簡易模式」並切換到 2D 備用模式
+  - 2D 備用模式：名字以水平滾動方式顯示，抽獎時快速滾動後減速停止，中獎者名字放大顯示（無需 Three.js，純 CSS 動畫）
 
 ## 效能考量
 
 - Three.js 使用 WebGL 渲染
 - 名單超過 50 人時，球體上只隨機顯示 50 個名字（避免效能問題）
   - 抽獎仍從完整名單中隨機抽取（不受顯示限制影響）
-  - 顯示的名字每次抽獎前會重新隨機選擇
+  - 顯示的名字在每次「抽獎動畫開始時」重新隨機選擇（非閒置時）
   - 使用者介面的名單列表顯示完整名單
 - 動畫使用 requestAnimationFrame
 - 響應式設計，支援不同螢幕尺寸
