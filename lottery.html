@@ -814,6 +814,59 @@
             webglSupported: true // WebGL 支援狀態
         };
 
+        // ============ 音效系統 ============
+        const AudioSystem = {
+            audioContext: null,
+
+            init() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn('Web Audio API 不支援');
+                }
+            },
+
+            playTick() {
+                if (!state.soundEnabled || !this.audioContext) return;
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                osc.frequency.value = 800 + Math.random() * 400;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+                osc.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + 0.05);
+            },
+
+            playWin() {
+                if (!state.soundEnabled || !this.audioContext) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const osc = this.audioContext.createOscillator();
+                        const gain = this.audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(this.audioContext.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                        osc.start(this.audioContext.currentTime);
+                        osc.stop(this.audioContext.currentTime + 0.3);
+                    }, i * 100);
+                });
+            },
+
+            toggle() {
+                state.soundEnabled = !state.soundEnabled;
+                const btn = document.getElementById('sound-toggle');
+                btn.textContent = state.soundEnabled ? '🔊 音效' : '🔇 靜音';
+                saveSoundSetting();
+            }
+        };
+
         // ============ localStorage 工具 ============
         const Storage = {
             isAvailable() {
@@ -1415,6 +1468,12 @@
                     document.querySelector('.winner-overlay').classList.remove('active');
                 });
             }
+
+            // 音效開關按鈕
+            const soundToggleBtn = document.getElementById('sound-toggle');
+            if (soundToggleBtn) {
+                soundToggleBtn.addEventListener('click', () => AudioSystem.toggle());
+            }
         }
 
         // ============ Google Sheets 匯入 ============
@@ -1531,6 +1590,9 @@
             renderHistoryList();
             updateCurrentPrizeDisplay();
 
+            // 初始化音效系統
+            AudioSystem.init();
+
             // 初始化主題
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) {
@@ -1563,10 +1625,19 @@
                     }
                 });
             }
+
+            // 初始化音效按鈕文字
+            const soundToggleBtn = document.getElementById('sound-toggle');
+            if (soundToggleBtn) {
+                soundToggleBtn.textContent = state.soundEnabled ? '🔊 音效' : '🔇 靜音';
+            }
         }
 
         // DOM 載入完成後初始化
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            AudioSystem.init();
+        });
     </script>
 </body>
 </html>
