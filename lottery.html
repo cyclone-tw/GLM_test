@@ -771,28 +771,20 @@
                 <button class="close-btn" data-modal="theme-modal">×</button>
             </div>
             <div class="form-group">
-                <label for="bg-color">背景色：</label>
-                <input type="color" id="bg-color" value="#f0f2f5">
+                <label for="custom-bg">背景色：</label>
+                <input type="color" id="custom-bg" value="#0a0a1a">
             </div>
             <div class="form-group">
-                <label for="text-color">文字色：</label>
-                <input type="color" id="text-color" value="#333333">
+                <label for="custom-text">文字色：</label>
+                <input type="color" id="custom-text" value="#ffffff">
             </div>
             <div class="form-group">
-                <label for="accent-color">強調色：</label>
-                <input type="color" id="accent-color" value="#ff6b6b">
+                <label for="custom-accent">強調色：</label>
+                <input type="color" id="custom-accent" value="#00ffff">
             </div>
             <div class="form-group">
-                <label for="particle-color">粒子顏色：</label>
-                <input type="color" id="particle-color" value="#4ecdc4">
-            </div>
-            <div class="form-group">
-                <label for="card-bg">卡片背景：</label>
-                <input type="color" id="card-bg" value="#ffffff">
-            </div>
-            <div class="form-group">
-                <label for="border-color">邊框色：</label>
-                <input type="color" id="border-color" value="#e0e0e0">
+                <label for="custom-particle">粒子顏色：</label>
+                <input type="color" id="custom-particle" value="#00ffff">
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" data-modal="theme-modal">取消</button>
@@ -1475,6 +1467,59 @@
             }
         }
 
+        // ============ 主題系統 ============
+        const themes = {
+            tech: {
+                bgColor: '#0a0a1a',
+                textColor: '#ffffff',
+                accentColor: '#00ffff',
+                particleColor: '#00ffff'
+            },
+            festive: {
+                bgColor: '#1a0a1a',
+                textColor: '#ffffff',
+                accentColor: '#ffd700',
+                particleColor: '#ff69b4'
+            },
+            minimal: {
+                bgColor: '#f5f5f5',
+                textColor: '#333333',
+                accentColor: '#0066cc',
+                particleColor: '#0066cc'
+            }
+        };
+
+        function applyTheme(themeName) {
+            let theme;
+
+            if (themeName === 'custom') {
+                theme = state.customTheme;
+                showModal('theme-modal');
+            } else {
+                theme = themes[themeName];
+            }
+
+            document.documentElement.style.setProperty('--bg-color', theme.bgColor);
+            document.documentElement.style.setProperty('--text-color', theme.textColor);
+            document.documentElement.style.setProperty('--accent-color', theme.accentColor);
+            document.documentElement.style.setProperty('--particle-color', theme.particleColor);
+
+            state.theme = themeName;
+            saveTheme();
+        }
+
+        function applyCustomTheme() {
+            state.customTheme = {
+                bgColor: document.getElementById('custom-bg').value,
+                textColor: document.getElementById('custom-text').value,
+                accentColor: document.getElementById('custom-accent').value,
+                particleColor: document.getElementById('custom-particle').value
+            };
+
+            applyTheme('custom');
+            hideModal('theme-modal');
+        }
+
         // ============ 初始化 ============
         function init() {
             loadState();
@@ -1485,6 +1530,39 @@
             renderPrizesList();
             renderHistoryList();
             updateCurrentPrizeDisplay();
+
+            // 初始化主題
+            const themeSelect = document.getElementById('theme-select');
+            if (themeSelect) {
+                themeSelect.value = state.theme;
+                applyTheme(state.theme);
+
+                themeSelect.addEventListener('change', (e) => {
+                    applyTheme(e.target.value);
+                });
+            }
+
+            // 自訂主題按鈕
+            const saveThemeBtn = document.getElementById('save-theme');
+            if (saveThemeBtn) {
+                saveThemeBtn.addEventListener('click', applyCustomTheme);
+            }
+
+            // 重置主題按鈕
+            const resetThemeBtn = document.getElementById('reset-theme');
+            if (resetThemeBtn) {
+                resetThemeBtn.addEventListener('click', () => {
+                    if (confirm('確定要重置主題到預設值嗎？')) {
+                        state.customTheme = {
+                            bgColor: '#0a0a1a',
+                            textColor: '#ffffff',
+                            accentColor: '#00ffff',
+                            particleColor: '#00ffff'
+                        };
+                        applyTheme('tech');
+                    }
+                });
+            }
         }
 
         // DOM 載入完成後初始化
